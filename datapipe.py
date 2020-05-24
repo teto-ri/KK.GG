@@ -8,7 +8,7 @@ import logging
 import logging.handlers
 
 #Riot developer's api key
-api_key = "RGAPI-ebb84159-8baf-404b-a49c-9b511e1320af"
+api_key = ""
 
 def match_list_by_name(name,api_key):
     api_name = "https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/" + name + "?api_key=" + api_key
