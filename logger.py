@@ -1,3 +1,5 @@
+# API데이터 처리 로깅용 
+
 import logging
 import logging.handlers
 

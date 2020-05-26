@@ -8,6 +8,7 @@ def parseOPGG(Name):
     Container = {}
     Container
     SummonerName = ""
+    Level = ""
     Ranking = ""
     Most = ""
     MostKDA = ""
@@ -26,6 +27,12 @@ def parseOPGG(Name):
     for i in soup.select('div[class=SummonerName]'):
         SummonerName = i.text
     Container['SummonerName'] = SummonerName
+    
+    try:
+        level = soup.find("span",{"class":"Level tip"}).text
+        Container["Level"] = level
+    except AttributeError:
+        Container["Level"] = ""
     
     try:
         ranking = soup.find("a",{"class":"tip Link"})

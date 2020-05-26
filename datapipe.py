@@ -6,10 +6,12 @@ import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import time
 import logging
 import logging.handlers
+import asyncio
 
 #Riot developer's api key
-api_key = "RGAPI-ebb84159-8baf-404b-a49c-9b511e1320af"
+api_key = ""
 
+#이름별 경기 기록 수집
 def match_list_by_name(name,api_key):
     api_name = "https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/" + name + "?api_key=" + api_key
     r = requests.get(api_name)
@@ -29,6 +31,7 @@ def match_list_by_name(name,api_key):
     match_list = match_list.drop_duplicates("gameId") #중복 경기기록은 삭제
     return match_list
 
+#이름별 유저 정보 수집
 def user_info_by_name(name,api_key):
     api_name = "https://kr.api.riotgames.com/lol/summoner/v4/summoners/by-name/" + name + "?api_key=" + api_key
     r = requests.get(api_name)
@@ -44,7 +47,8 @@ def user_info_by_name(name,api_key):
     r = requests.get(api_url)
     user_info = r.json()
     return user_info
-    
+
+#게임 기록별 게임 정보 수집
 def match_data_by_match_list(match_list,match_analysis_num,api_key):
     if match_analysis_num > 20: #최대 20게임
         return print("match_analysis_num is down 20(riot api 20 request limit per second)")
@@ -53,9 +57,6 @@ def match_data_by_match_list(match_list,match_analysis_num,api_key):
         for game_id in list(match_list.iloc[:match_analysis_num,1]):
             api_url = "https://kr.api.riotgames.com/lol/match/v4/matches/" + str(game_id) + "?api_key=" + api_key
             r = requests.get(api_url)
-            while r.status_code!=200: # 오류를 리턴할 경우 지연하고 다시 시도
-                time.sleep(5)
-                r = requests.get(api_url)
             r_json = r.json()
             temp_df = pd.DataFrame(list(r_json.values()), index=list(r_json.keys())).T
             match_df = pd.concat([match_df, temp_df])
@@ -65,10 +66,34 @@ def match_data_by_match_list(match_list,match_analysis_num,api_key):
         match_df.drop(["gameId","platformId","gameCreation","queueId","mapId","seasonId","gameVersion","gameMode","gameType"],axis=1,inplace=True) #필요없는 칼럼
     return match_df
 
+#비동기 프로그래밍 버전 게임 기록별 게임 정보 수집
+def async_match_data_by_match_list(match_list,match_analysis_num,api_key):
+    urls = ["https://kr.api.riotgames.com/lol/match/v4/matches/" + str(game_id) + "?api_key=" + api_key for game_id in list(match_list.iloc[:20,1])]
+    async def getjson(url):
+        r = await loop.run_in_executor(None,requests.get,url)
+        r_json = r.json()
+        return r_json
+                                         
+    async def task():
+        fts = [asyncio.ensure_future(getjson(u)) for u in urls]
+        r = await asyncio.gather(*fts)
+        return r
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    json_list = loop.run_until_complete(task())
+    loop.close
+    match_df = pd.DataFrame()
+    for i in range(match_analysis_num):
+        temp_df = pd.DataFrame(list(json_list[i].values()),index=list(json_list[i].keys())).T
+        match_df = pd.concat([match_df,temp_df])
+    match_df.index = range(len(match_df))
+    match_df.drop(["gameId","platformId","gameCreation","queueId","mapId","seasonId","gameVersion","gameMode","gameType"],axis=1,inplace=True) #필요없는 칼럼
+    return match_df
+
+#json으로 이루어져있는 팀 데이터 칼럼화, 플레이어 정보 기록
 def team_json_to_column(name,match_df):
 
     num = len(match_df)
-
     team_id_list = [] #name에 해당하는 플레이어의 소속 팀 id
     #해당 플레이어의 전적 기록용 데이터프레임
     player_champ=[]
@@ -84,7 +109,7 @@ def team_json_to_column(name,match_df):
     player_turretKills=[]
     for i in range(num):
         for j in range(10):
-            if name == match_df["participantIdentities"].iat[i][j]["player"]["summonerName"]:#해당 플레이어 탐색
+            if name.lower() == (match_df["participantIdentities"].iat[i][j]["player"]["summonerName"]).lower():#해당 플레이어 탐색
                 team_id_list.append(match_df["participants"].iat[i][j]["teamId"])
                 player_champ.append(match_df["participants"].iat[i][j]["championId"])
                 player_kill.append(match_df["participants"].iat[i][j]["stats"]["kills"])
@@ -141,6 +166,7 @@ def towerkill_per_total(df):
         return 0
     return df["player_turretKills"] / df["team_towerKills"]
 
+#스탯 칼럼 전처리
 def stat_preprocessing(stats_df,match_df,player_stat,remove_col):
     #게임시간 (초) -> 분
     stats_df["gameMinute"] = match_df["gameDuration"] / 60
@@ -197,6 +223,7 @@ def stat_preprocessing(stats_df,match_df,player_stat,remove_col):
     player_stat.drop(remove_col2,axis=1,inplace=True)
     return stats_df,player_stat
 
+#json으로 이루어진 스탯 데이터 칼럼화
 def stat_json_to_column(match_analysis_num,match_df,player_stat):
     #스탯 데이터에서 가져올 칼럼
     use_cols = ["kills","deaths","totalDamageDealtToChampions", "visionScore","totalTimeCrowdControlDealt"]
@@ -225,6 +252,7 @@ def stat_json_to_column(match_analysis_num,match_df,player_stat):
     match_df.drop("participants",axis=1,inplace=True)
     return match_df,player_stat
 
+#팀 칼럼 전처리
 def team_preprocessing(match_df):
     #분당 팀의 타워 파괴량
     match_df["towerKills_per_minute"] = match_df["towerKills"] / match_df["gameMinute"]
@@ -247,7 +275,7 @@ def team_preprocessing(match_df):
     match_df.drop(remove_col,axis=1,inplace=True)
     return match_df
 
-#원 핫 인코더
+#time_bin 원 핫 인코더
 def timebin_one_hot_encoder(match_df):
     dummies = pd.DataFrame()
     for i in range(len(match_df)):
@@ -267,6 +295,7 @@ def timebin_one_hot_encoder(match_df):
     dummies.reset_index(drop=True,inplace=True)
     return dummies
 
+#최종 전처리 함수
 def match_data_preprocessing(match_df,bins):
     match_df = team_preprocessing(match_df) #팀 데이터 전처리
     
@@ -305,7 +334,7 @@ logger.setLevel(logging.INFO)
 
 formatter = logging.Formatter("[%(levelname)s|%(filename)s:%(lineno)s] %(asctime)s > %(message)s")
 
-fileHandler = logging.FileHandler("status.log")
+fileHandler = logging.FileHandler("log/status.log")
 streamHandler = logging.StreamHandler()
 
 fileHandler.setFormatter(formatter)
@@ -320,12 +349,12 @@ def collect_predict_data_by_name(name,match_analysis_num,api_key,bins = [0, 20, 
     match_list = match_list_by_name(name,api_key)
     if(list(match_list)==list("no_name")):
         logger.error("Name Not Found")
-        return -1,-1,-1,-1
+        return [-1],[-1],[-1],[-1]
     elif(list(match_list)==list("error")):
         logger.error("Server error, Try regenerate API Key")
-        return -404,-404,-404,-404
+        return [-404],[-404],[-404],[-404]
     else:
-        match_df = match_data_by_match_list(match_list,match_analysis_num,api_key)
+        match_df = async_match_data_by_match_list(match_list,match_analysis_num,api_key)
         match_df,player_stat = team_json_to_column(name,match_df)
         match_df,player_stat = stat_json_to_column(match_analysis_num,match_df,player_stat)
         match_df,game_minute,win_lable = match_data_preprocessing(match_df,bins)
