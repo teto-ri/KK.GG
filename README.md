@@ -5,7 +5,7 @@ KK.GG는 카카오톡 롤 서포트 챗봇 서비스로, 최신 패치노트와 
 
 카카오톡 채널 링크 : <http://pf.kakao.com/_yxhfxmxb> 
 
-![](https://i.imgur.com/tm9FXR8.png)
+![](https://i.imgur.com/CE4HnPS.png)
 
 ## Dependency Manage / 의존성 관리
 
