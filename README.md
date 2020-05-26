@@ -5,6 +5,8 @@ KK.GG는 카카오톡 롤 서포트 챗봇 서비스로, 최신 패치노트와 
 
 카카오톡 채널 링크 : <http://pf.kakao.com/_yxhfxmxb> 
 
+![](https://i.imgur.com/tm9FXR8.png)
+
 ## Dependency Manage / 의존성 관리
 
 Sever : Ubuntu 18.04 LTS ,Python 3.7.4, Flask 1.1.1
