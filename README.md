@@ -1,7 +1,7 @@
 # KK.GG
 KK.GG is KakaoTalk league of legend support chatbot, It supports user information such as tier ranking, most champ, match analysis and future winning rate prediction service when input user name.
 
-KK.GG는 카카오톡 롤 서포트 챗봇 서비스로, 최신 패치노트와 유저 이름을 입력하면 랭킹, 티어, 모스트 챔피언 등의 유저 정보, 개인화 맞춤 전적 분석, 승률 예측 기능을 제공합니다.
+KK.GG는 카카오톡 롤 서포트 챗봇 서비스로, 최신 패치노트와 Riot API를 이용해 유저 이름을 입력하면 랭킹, 티어, 모스트 챔피언 등의 유저 정보, 개인화 맞춤 전적 분석, 승률 예측 기능을 제공합니다.
 
 카카오톡 채널 링크 : <http://pf.kakao.com/_yxhfxmxb> 
 
