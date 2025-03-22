@@ -5,8 +5,6 @@ KK.GG는 카카오톡 롤 서포트 챗봇 서비스로, 최신 패치노트와 
 
 카카오톡 채널 링크 : <http://pf.kakao.com/_yxhfxmxb> 
 
-서버 상태는 <https://test0712.run.goorm.io/> 에 접속하여, connection refused가 뜨면 서버가 열려있지 않고, server online이 뜨면 서버가 가동중입니다.
-
 ![](https://i.imgur.com/CE4HnPS.png)
 ![image](https://github.com/user-attachments/assets/f2267d1a-7453-468d-8d15-6b3227fbf911)
 
